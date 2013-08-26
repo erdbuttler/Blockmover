@@ -11,7 +11,7 @@ public class Block {
     private int dist_fallingInPx;
 
     public Block(BlockMoverGameField parent, int shape_position_row, int shape_position_column) {
-        this.parent = parent;
+        Block.parent = parent;
         this.shape_position_row = shape_position_row;
         this.shape_position_column = shape_position_column;
     }
