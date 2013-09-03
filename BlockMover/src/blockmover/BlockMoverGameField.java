@@ -63,17 +63,17 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
 
         //Test implementation
         /*
-        for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < columns; j++) {
-        field[i][j] = ShapeColor.NONE;
-        }
-        }
-        field[0][3] = ShapeColor.YELLOW;
-        field[1][3] = ShapeColor.GREEN;
-        field[2][3] = ShapeColor.YELLOW;
-        field[3][3] = ShapeColor.RED;
-        field[4][3] = ShapeColor.GRAY;
-        field[5][3] = ShapeColor.YELLOW;
+         for (int i = 0; i < rows; i++) {
+         for (int j = 0; j < columns; j++) {
+         field[i][j] = ShapeColor.NONE;
+         }
+         }
+         field[0][3] = ShapeColor.YELLOW;
+         field[1][3] = ShapeColor.GREEN;
+         field[2][3] = ShapeColor.YELLOW;
+         field[3][3] = ShapeColor.RED;
+         field[4][3] = ShapeColor.GRAY;
+         field[5][3] = ShapeColor.YELLOW;
          */
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
@@ -86,7 +86,7 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
             }
         }
         createNewRow();
-        
+
         //sort the field - no empty elements
         int point_top;
         int point_bottom;
@@ -114,10 +114,6 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
             rd_num = rd.nextInt(ShapeColor.values().length - 1);
             rd_num++;
             newRow[i] = ShapeColor.values()[rd_num];
-            if(newRow[i] == ShapeColor.NONE) {
-                System.out.println("found NONE!");
-                i--;
-            }
         }
     }
 
@@ -161,7 +157,7 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
         for (int i = 0; i < columns; i++) {
             g.setColor(Color.BLACK);
             g.drawRect(blocksize * i, 0 - blocksize, blocksize, blocksize);
-            g.setColor(new Color( (int) (newRow[i].getColor().getRGB()) ));
+            g.setColor(new Color((int) (newRow[i].getColor().getRGB())));
             g.fillRect(blocksize * i, 0 - blocksize, blocksize - 1, blocksize - 1);
         }
 
@@ -174,6 +170,15 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
         g2D.drawRect(blocksize * (GamerPositionColumn + 1),
                 blocksize * GamerPositionRow,
                 blocksize, blocksize);
+
+        //For Testing
+        for (int i = 0; i < fieldIsBlocked.length; i++) {
+            for (int j = 0; j < fieldIsBlocked[0].length; j++) {
+                if (fieldIsBlocked[i][j]) {
+                    g2D.drawLine(blocksize * j, blocksize * i, blocksize * (j + 1), blocksize * (i + 1));
+                }
+            }
+        }
     }
 
     private int checkComboRows(int checked_field[][]) {
@@ -259,6 +264,9 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
             int rd_num;
             createNewRow();
             GamerPositionRow++;
+            for (Block b : gravityblocks) {
+                b.setShape_position_row(b.getShape_position_row() + 1);
+            }
         }
     }
 
@@ -275,8 +283,10 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
                 }
             }
         }
+
         if (combo > 0) {
-            System.out.println("found combo: " + combo);
+            timeForNewRowInMillis -= combo * 25;
+            System.out.println("timeForNewRowInMillis: " + timeForNewRowInMillis);
             combo = 0;
         }
     }
@@ -299,25 +309,38 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
                     block.setTime_start_falling(time);
                     block.setShapecolor(field[i + 1][j]);
                     gravityblocks.add(block);
+                    //Mark blocked fields
+                    fieldIsBlocked[i + 1][j] = true;
+                    fieldIsBlocked[i][j] = true;
                     field[i + 1][j] = ShapeColor.NONE;
                 }
             }
         }
+
         List<Block> block_del = new ArrayList<Block>();
         for (Block b : gravityblocks) {
             long time_dist = time - b.getTime_start_falling();
             double dist_falling = (double) time_dist / (double) gravityTimeForOneBlockInMillis;
             if (dist_falling >= 1.0) {
                 if (b.getShape_position_row() > 0) {
+                    fieldIsBlocked[b.getShape_position_row()][b.getShape_position_column()] = false;
                     b.setShape_position_row(b.getShape_position_row() - 1);
+                    fieldIsBlocked[b.getShape_position_row()][b.getShape_position_column()] = true;
                 }
 
+                //check if they are 'landed'
                 if (b.getShape_position_row() == 0
                         || field[b.getShape_position_row() - 1][b.getShape_position_column()] != ShapeColor.NONE) {
                     field[b.getShape_position_row()][b.getShape_position_column()] = b.getShapecolor();
+                    //Unmark blocked fields
+                    fieldIsBlocked[b.getShape_position_row()][b.getShape_position_column()] = false;
+                    fieldIsBlocked[b.getShape_position_row() + 1][b.getShape_position_column()] = false;
                     block_del.add(b);
                 } else {
                     b.setTime_start_falling(b.getTime_start_falling() + gravityTimeForOneBlockInMillis);
+                    //Mark the field
+                    fieldIsBlocked[b.getShape_position_row()][b.getShape_position_column()] = true;
+                    fieldIsBlocked[b.getShape_position_row() - 1][b.getShape_position_column()] = true;
                     dist_falling -= 1.0;
                 }
             }
@@ -329,6 +352,11 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
     }
 
     private void switchShapes() {
+        if (fieldIsBlocked[GamerPositionRow][GamerPositionColumn]
+                || fieldIsBlocked[GamerPositionRow][GamerPositionColumn + 1]) {
+            System.out.println("can't swap, its blocked!");
+            return;
+        }
         ShapeColor swap = field[GamerPositionRow][GamerPositionColumn];
         field[GamerPositionRow][GamerPositionColumn] = field[GamerPositionRow][GamerPositionColumn + 1];
         field[GamerPositionRow][GamerPositionColumn + 1] = swap;
