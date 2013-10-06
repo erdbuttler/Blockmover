@@ -29,7 +29,7 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
 
     private Timer timer;
     private int framerate = 25;
-    private int rows = 22;
+    private int rows = 18;
     private int columns = 10;
     //22 rows with 10 elements (columns)
     private ShapeColor[][] field = new ShapeColor[rows][columns];
@@ -50,7 +50,6 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
     private int distForNewRow = 0;
     private long startTimeOfNewRow = System.currentTimeMillis();
 
-    @SuppressWarnings("LeakingThisInConstructor")
     public BlockMoverGameField() {
         setFocusable(true);
         addKeyListener(this);
@@ -172,14 +171,23 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
                 blocksize, blocksize);
 
         //For Testing
-        for (int i = 0; i < fieldIsBlocked.length; i++) {
+        //showLockedElements(g2D);
+        
+    }
+
+	/**
+	 * For Testing purpose only. The block that is blocked now get a line from edge to edge.
+	 * @param g2D
+	 */
+	private void showLockedElements(Graphics2D g2D) {
+		for (int i = 0; i < fieldIsBlocked.length; i++) {
             for (int j = 0; j < fieldIsBlocked[0].length; j++) {
                 if (fieldIsBlocked[i][j]) {
                     g2D.drawLine(blocksize * j, blocksize * i, blocksize * (j + 1), blocksize * (i + 1));
                 }
             }
         }
-    }
+	}
 
     private int checkComboRows(int checked_field[][]) {
         int combo = 0;
@@ -261,10 +269,12 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
             }
             field[0] = newRow;
             newRow = new ShapeColor[columns];
-            int rd_num;
             createNewRow();
             GamerPositionRow++;
             for (Block b : gravityblocks) {
+            	//moving the falling block means, the blocked areas have to move too
+            	fieldIsBlocked[b.getShape_position_row() - 1][b.getShape_position_column()] = false;
+            	fieldIsBlocked[b.getShape_position_row() + 1][b.getShape_position_column()] = true;
                 b.setShape_position_row(b.getShape_position_row() + 1);
             }
         }
@@ -302,6 +312,7 @@ public class BlockMoverGameField extends JPanel implements KeyListener, ActionLi
     private void gravity() {
         ShapeColor swap;
         Block block = null;
+        //Check if something is falling, when the block underneath is missing (ShapeColor.NONE)
         for (int j = 0; j < columns; j++) {
             for (int i = 0; i < rows - 1; i++) {
                 if (field[i][j] == ShapeColor.NONE && field[i + 1][j] != ShapeColor.NONE) {
