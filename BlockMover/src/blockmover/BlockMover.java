@@ -3,15 +3,16 @@ package blockmover;
 
 import javax.swing.JFrame;
 
+import core.AssemblyVersion;
+
 public class BlockMover extends JFrame {
 
     public BlockMover() {
-        this.setTitle("BlockerMover Alpha 0.0.2");
-        setSize(260, 560);
+        this.setTitle(AssemblyVersion.version);
+        setSize(400, 560);
 
         BlockMoverGameField blgf = new BlockMoverGameField();
         add(blgf);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
-
 }
